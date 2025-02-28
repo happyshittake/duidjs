@@ -1,0 +1,42 @@
+{
+  "name": "duidjs",
+  "version": "0.1.0",
+  "description": "A TypeScript library for handling money operations with precision using BigInt",
+  "module": "dist/index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "bun build ./src/index.ts --outdir ./dist --target node && tsc --emitDeclarationOnly --outDir dist",
+    "test": "bun test",
+    "prepublishOnly": "bun run build",
+    "example": "bun examples/basic.ts"
+  },
+  "keywords": [
+    "money",
+    "currency",
+    "finance",
+    "bigint",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/duidjs.git"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
