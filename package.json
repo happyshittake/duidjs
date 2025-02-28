@@ -1,6 +1,6 @@
 {
   "name": "duidjs",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A TypeScript library for handling money operations with precision using BigInt",
   "module": "dist/index.js",
   "main": "dist/index.js",
@@ -24,11 +24,11 @@
     "bigint",
     "typescript"
   ],
-  "author": "",
+  "author": "happyshittake",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/duidjs.git"
+    "url": "https://github.com/happyshittake/duidjs.git"
   },
   "devDependencies": {
     "@types/bun": "latest"
