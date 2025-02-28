@@ -238,20 +238,6 @@ try {
 bun test
 ```
 
-## Release Process
-
-This project uses GitHub Actions to automatically publish to npm when a new release is created.
-
-To release a new version:
-
-1. Update the version in `package.json`
-2. Commit your changes
-3. Create a new release on GitHub
-4. The GitHub Action will automatically:
-   - Run tests
-   - Build the package
-   - Publish to npm
-
 ## License
 
 MIT
