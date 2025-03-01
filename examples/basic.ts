@@ -9,6 +9,7 @@ import {
   moneyFromBigInt,
   zero,
   Currency,
+  customCurrency,
   formatAccounting,
   formatFinancial,
   ExchangeRateProvider,
@@ -138,3 +139,32 @@ try {
 } catch (error) {
   console.error('Error:', error instanceof Error ? error.message : String(error));
 }
+
+// Custom currencies
+console.log('\n--- Custom Currencies ---');
+
+// Create Bitcoin as a custom currency
+const bitcoin = Currency.fromMetadata({
+  code: 'BTC',
+  name: 'Bitcoin',
+  symbol: '₿',
+  decimalPlaces: 8
+});
+
+const btcAmount = money(0.05, bitcoin);
+console.log('Bitcoin amount:', btcAmount.format()); // ₿0.05000000
+
+// Using utility function
+const ethereum = customCurrency({
+  code: 'ETH',
+  name: 'Ethereum',
+  symbol: 'Ξ',
+  decimalPlaces: 18
+});
+
+const ethAmount = money(1.5, ethereum);
+console.log('Ethereum amount:', ethAmount.format()); // Ξ1.500000000000000000
+
+// Format with specific options
+console.log('BTC with code:', btcAmount.format({ code: true, symbol: false })); // 0.05000000 BTC
+console.log('ETH with 4 decimals:', ethAmount.format({ decimalPlaces: 4 })); // Ξ1.5000

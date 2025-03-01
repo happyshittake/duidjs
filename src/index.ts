@@ -37,6 +37,7 @@ export {
 // Import types for helper functions
 import { Money } from './money';
 import { Currency } from './currency';
+import type { CurrencyMetadata } from './currencies/iso';
 
 /**
  * Creates a Money instance from a floating-point amount
@@ -100,4 +101,14 @@ export function zero(currency: string | Currency): Money {
  */
 export function currency(code: string): Currency {
   return new Currency(code);
+}
+
+/**
+ * Creates a Currency instance from custom metadata
+ *
+ * @param metadata The currency metadata
+ * @returns A new Currency instance
+ */
+export function customCurrency(metadata: CurrencyMetadata): Currency {
+  return Currency.fromMetadata(metadata);
 }

@@ -3,6 +3,7 @@
  */
 
 import { ISO_CURRENCIES } from "./currencies/iso";
+import type { CurrencyMetadata } from "./currencies/iso";
 import { InvalidCurrencyError } from "./errors";
 
 /**
@@ -63,6 +64,43 @@ export class Currency {
    */
   static fromCode(code: string): Currency {
     return new Currency(code);
+  }
+
+  /**
+   * Creates a Currency instance from custom metadata
+   *
+   * @param metadata The currency metadata
+   * @returns A new Currency instance
+   * @throws {InvalidCurrencyError} If the metadata is invalid
+   */
+  static fromMetadata(metadata: CurrencyMetadata): Currency {
+    // Validate metadata
+    if (!metadata.code || typeof metadata.code !== 'string') {
+      throw new InvalidCurrencyError('Currency code is required and must be a string');
+    }
+    
+    if (!metadata.name || typeof metadata.name !== 'string') {
+      throw new InvalidCurrencyError('Currency name is required and must be a string');
+    }
+    
+    if (!metadata.symbol || typeof metadata.symbol !== 'string') {
+      throw new InvalidCurrencyError('Currency symbol is required and must be a string');
+    }
+    
+    if (typeof metadata.decimalPlaces !== 'number' ||
+        metadata.decimalPlaces < 0 ||
+        !Number.isInteger(metadata.decimalPlaces)) {
+      throw new InvalidCurrencyError('decimalPlaces must be a non-negative integer');
+    }
+    
+    // Create a new instance bypassing the ISO validation
+    const currency = Object.create(Currency.prototype);
+    currency.code = metadata.code.toUpperCase();
+    currency.name = metadata.name;
+    currency.symbol = metadata.symbol;
+    currency.decimalPlaces = metadata.decimalPlaces;
+    
+    return currency;
   }
 
   /**

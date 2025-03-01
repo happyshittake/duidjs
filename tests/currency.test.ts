@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { Currency, ISO_CURRENCIES, InvalidCurrencyError } from "../src";
+import { Currency, ISO_CURRENCIES, InvalidCurrencyError, customCurrency, Money } from "../src";
+import type { CurrencyMetadata } from "../src";
 
 describe("Currency", () => {
   describe("Creation", () => {
@@ -132,6 +133,117 @@ describe("Currency", () => {
       expect(usd.getDecimalFactor()).toBe(100n);
       expect(jpy.getDecimalFactor()).toBe(1n);
       expect(bhd.getDecimalFactor()).toBe(1000n);
+    });
+  });
+
+  describe("Custom Currencies", () => {
+    it("should create currency from metadata using fromMetadata", () => {
+      const btc = Currency.fromMetadata({
+        code: 'BTC',
+        name: 'Bitcoin',
+        symbol: '₿',
+        decimalPlaces: 8
+      });
+      
+      expect(btc.code).toBe("BTC");
+      expect(btc.name).toBe("Bitcoin");
+      expect(btc.symbol).toBe("₿");
+      expect(btc.decimalPlaces).toBe(8);
+    });
+
+    it("should create currency from metadata using customCurrency function", () => {
+      const eth = customCurrency({
+        code: 'ETH',
+        name: 'Ethereum',
+        symbol: 'Ξ',
+        decimalPlaces: 18
+      });
+      
+      expect(eth.code).toBe("ETH");
+      expect(eth.name).toBe("Ethereum");
+      expect(eth.symbol).toBe("Ξ");
+      expect(eth.decimalPlaces).toBe(18);
+    });
+
+    it("should require valid metadata properties", () => {
+      // Missing required properties
+      expect(() =>
+        Currency.fromMetadata({
+          code: 'BTC',
+          name: '', // Empty string
+          symbol: '₿',
+          decimalPlaces: 8
+        })
+      ).toThrow(InvalidCurrencyError);
+
+      expect(() =>
+        Currency.fromMetadata({
+          code: 'BTC',
+          name: 'Bitcoin',
+          symbol: '', // Empty string
+          decimalPlaces: 8
+        })
+      ).toThrow(InvalidCurrencyError);
+      
+      // Invalid decimal places
+      expect(() =>
+        Currency.fromMetadata({
+          code: 'BTC',
+          name: 'Bitcoin',
+          symbol: '₿',
+          decimalPlaces: -1 // Negative value
+        })
+      ).toThrow(InvalidCurrencyError);
+
+      expect(() =>
+        Currency.fromMetadata({
+          code: 'BTC',
+          name: 'Bitcoin',
+          symbol: '₿',
+          decimalPlaces: 1.5 // Non-integer value
+        })
+      ).toThrow(InvalidCurrencyError);
+    });
+
+    it("should work with Money operations", () => {
+      const btc = Currency.fromMetadata({
+        code: 'BTC',
+        name: 'Bitcoin',
+        symbol: '₿',
+        decimalPlaces: 8
+      });
+      
+      const amount = Money.fromFloat(0.5, btc);
+      expect(amount.format()).toBe("₿0.50000000");
+      
+      const doubled = amount.multiply(2);
+      expect(doubled.format()).toBe("₿1.00000000");
+      
+      // Conversion between major and minor units
+      // Use string to avoid floating point precision issues
+      expect(btc.toMinorUnits("1.12345678")).toBe(112345678n);
+      expect(btc.toMajorUnits(112345678n)).toBe("1.12345678");
+    });
+
+    it("should properly format custom currency amounts", () => {
+      const doge = Currency.fromMetadata({
+        code: 'DOGE',
+        name: 'Dogecoin',
+        symbol: 'Ð',
+        decimalPlaces: 8
+      });
+      
+      // Test formatting with different options
+      expect(doge.format(1234.56789012)).toBe("Ð1,234.56789012");
+      
+      const formattedWithOptions = doge.format(1234.56789012, {
+        symbol: false,
+        code: true,
+        useGrouping: false,
+        decimalPlaces: 4
+      });
+      
+      expect(formattedWithOptions).toBe("1234.5679 DOGE");
     });
   });
 });
