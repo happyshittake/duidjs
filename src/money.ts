@@ -180,7 +180,7 @@ export class Money {
 
   /**
    * Divides this Money instance by a divisor
-   * 
+   *
    * @param divisor The divisor
    * @returns A new Money instance with the quotient
    * @throws {InvalidAmountError} If the divisor is invalid or zero
@@ -216,6 +216,31 @@ export class Money {
       
       return new Money(this.amount / divisor, this.currency);
     }
+  }
+
+  /**
+   * Calculates the ratio of this Money instance to another
+   *
+   * @param money The Money instance to compare with
+   * @returns A number representing the ratio between the two Money instances
+   * @throws {CurrencyMismatchError} If the currencies don't match
+   * @throws {InvalidOperationError} If the comparator money amount is zero
+   */
+  ratioTo(money: Money): number {
+    // Check for same currency
+    this.assertSameCurrency(money);
+    
+    // Check for division by zero
+    if (money.amount === 0n) {
+      throw new InvalidOperationError('Division by zero');
+    }
+    
+    // To maintain precision, we use a scaling factor for the calculation
+    const scale = 1000000n; // 6 decimal places of precision
+    const scaledRatio = (this.amount * scale) / money.amount;
+    
+    // Convert to number and adjust for the scaling
+    return Number(scaledRatio) / Number(scale);
   }
 
   /**

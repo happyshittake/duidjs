@@ -11,6 +11,7 @@ import {
   formatAccounting,
   CurrencyMismatchError,
   InvalidAmountError,
+  InvalidOperationError,
 } from "../src";
 
 describe("Money", () => {
@@ -97,6 +98,30 @@ describe("Money", () => {
       
       expect(result.getAmount()).toBe("3.50");
       expect(result.currency.code).toBe("USD");
+    });
+
+    it("should calculate ratio between money values", () => {
+      const a = money(25, "USD");
+      const b = money(100, "USD");
+      const ratio = a.ratioTo(b);
+      
+      expect(ratio).toBeCloseTo(0.25);
+    });
+
+    it("should calculate ratio with decimal precision", () => {
+      const a = money(1, "USD");
+      const b = money(3, "USD");
+      const ratio = a.ratioTo(b);
+      
+      expect(ratio).toBeCloseTo(0.3333333, 6);
+    });
+
+    it("should handle zero numerator in ratio", () => {
+      const a = money(0, "USD");
+      const b = money(100, "USD");
+      const ratio = a.ratioTo(b);
+      
+      expect(ratio).toBe(0);
     });
 
     it("should get absolute value", () => {
@@ -227,11 +252,19 @@ describe("Money", () => {
       expect(() => usd.add(eur)).toThrow(CurrencyMismatchError);
       expect(() => usd.subtract(eur)).toThrow(CurrencyMismatchError);
       expect(() => usd.greaterThan(eur)).toThrow(CurrencyMismatchError);
+      expect(() => usd.ratioTo(eur)).toThrow(CurrencyMismatchError);
     });
 
     it("should throw on invalid amount", () => {
       expect(() => money(NaN, "USD")).toThrow(InvalidAmountError);
       expect(() => money(Infinity, "USD")).toThrow(InvalidAmountError);
+    });
+    
+    it("should throw on division by zero in ratioTo", () => {
+      const a = money(10, "USD");
+      const zero = money(0, "USD");
+      
+      expect(() => a.ratioTo(zero)).toThrow(InvalidOperationError);
     });
   });
 });

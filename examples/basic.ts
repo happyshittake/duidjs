@@ -70,6 +70,21 @@ console.log('price < tax:', price.lessThan(tax)); // false
 console.log('tax is zero:', tax.isZero()); // false
 console.log('emptyWallet is zero:', emptyWallet.isZero()); // true
 
+// Ratio Calculation
+console.log('\n--- Ratio Calculation ---');
+
+const product = money(25, 'USD');
+const cartTotal = money(100, 'USD');
+console.log('Product ratio to total:', `${product.format()} / ${cartTotal.format()} = ${product.ratioTo(cartTotal)}`); // 0.25 (25%)
+
+const taxAmount = money(5, 'USD');
+const itemPrice = money(50, 'USD');
+console.log('Tax rate:', `${taxAmount.format()} / ${itemPrice.format()} = ${taxAmount.ratioTo(itemPrice) * 100}%`); // 10%
+
+const rent = money(1000, 'USD');
+const expenses = money(2500, 'USD');
+console.log('Rent portion of expenses:', `${rent.format()} / ${expenses.format()} = ${rent.ratioTo(expenses) * 100}%`); // 40%
+
 // Allocation and distribution
 console.log('\n--- Allocation and Distribution ---');
 
