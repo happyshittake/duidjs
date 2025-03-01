@@ -13,6 +13,7 @@ export { Currency } from './currency';
 // Export currency data
 export { ISO_CURRENCIES } from './currencies/iso';
 export type { CurrencyMetadata } from './currencies/iso';
+export { CurrencyCode } from './currencies/codes';
 
 // Export formatting utilities
 export { formatMoney, formatMoneyTable, formatAccounting, formatFinancial } from './formatter';
@@ -38,59 +39,95 @@ export {
 import { Money } from './money';
 import { Currency } from './currency';
 import type { CurrencyMetadata } from './currencies/iso';
+import { CurrencyCode } from './currencies/codes';
 
 /**
  * Creates a Money instance from a floating-point amount
  *
  * @param amount The amount in major units (e.g., dollars) as a floating-point number
- * @param currency The currency code or Currency instance
+ * @param currency The currency code, CurrencyCode enum, or Currency instance
  * @returns A new Money instance
  */
-export function money(amount: number, currency: string | Currency): Money {
-  return Money.fromFloat(amount, currency);
+export function money(amount: number, currency: string | CurrencyCode | Currency): Money {
+  if (typeof currency === 'string') {
+    return Money.fromFloat(amount, currency);
+  }
+  if (currency instanceof Currency) {
+    return Money.fromFloat(amount, currency);
+  }
+  // Handle CurrencyCode enum
+  return Money.fromFloat(amount, Currency.from(currency));
 }
 
 /**
  * Creates a Money instance from a string amount
  *
  * @param amount The amount in major units (e.g., dollars) as a string
- * @param currency The currency code or Currency instance
+ * @param currency The currency code, CurrencyCode enum, or Currency instance
  * @returns A new Money instance
  */
-export function moneyFromString(amount: string, currency: string | Currency): Money {
-  return Money.fromString(amount, currency);
+export function moneyFromString(amount: string, currency: string | CurrencyCode | Currency): Money {
+  if (typeof currency === 'string') {
+    return Money.fromString(amount, currency);
+  }
+  if (currency instanceof Currency) {
+    return Money.fromString(amount, currency);
+  }
+  // Handle CurrencyCode enum
+  return Money.fromString(amount, Currency.from(currency));
 }
 
 /**
  * Creates a Money instance from an integer amount in minor units
  *
  * @param amount The amount in minor units (e.g., cents) as an integer
- * @param currency The currency code or Currency instance
+ * @param currency The currency code, CurrencyCode enum, or Currency instance
  * @returns A new Money instance
  */
-export function moneyFromMinorUnits(amount: number, currency: string | Currency): Money {
-  return Money.fromInt(amount, currency);
+export function moneyFromMinorUnits(amount: number, currency: string | CurrencyCode | Currency): Money {
+  if (typeof currency === 'string') {
+    return Money.fromInt(amount, currency);
+  }
+  if (currency instanceof Currency) {
+    return Money.fromInt(amount, currency);
+  }
+  // Handle CurrencyCode enum
+  return Money.fromInt(amount, Currency.from(currency));
 }
 
 /**
  * Creates a Money instance from a BigInt amount in minor units
  *
  * @param amount The amount in minor units (e.g., cents) as a BigInt
- * @param currency The currency code or Currency instance
+ * @param currency The currency code, CurrencyCode enum, or Currency instance
  * @returns A new Money instance
  */
-export function moneyFromBigInt(amount: bigint, currency: string | Currency): Money {
-  return Money.fromBigInt(amount, currency);
+export function moneyFromBigInt(amount: bigint, currency: string | CurrencyCode | Currency): Money {
+  if (typeof currency === 'string') {
+    return Money.fromBigInt(amount, currency);
+  }
+  if (currency instanceof Currency) {
+    return Money.fromBigInt(amount, currency);
+  }
+  // Handle CurrencyCode enum
+  return Money.fromBigInt(amount, Currency.from(currency));
 }
 
 /**
  * Creates a zero Money instance
  *
- * @param currency The currency code or Currency instance
+ * @param currency The currency code, CurrencyCode enum, or Currency instance
  * @returns A new Money instance with zero amount
  */
-export function zero(currency: string | Currency): Money {
-  return Money.zero(currency);
+export function zero(currency: string | CurrencyCode | Currency): Money {
+  if (typeof currency === 'string') {
+    return Money.zero(currency);
+  }
+  if (currency instanceof Currency) {
+    return Money.zero(currency);
+  }
+  // Handle CurrencyCode enum
+  return Money.zero(Currency.from(currency));
 }
 
 /**

@@ -4,6 +4,7 @@
 
 import { ISO_CURRENCIES } from "./currencies/iso";
 import type { CurrencyMetadata } from "./currencies/iso";
+import { CurrencyCode } from "./currencies/codes";
 import { InvalidCurrencyError } from "./errors";
 
 /**
@@ -63,6 +64,17 @@ export class Currency {
    * @throws {InvalidCurrencyError} If the currency code is invalid
    */
   static fromCode(code: string): Currency {
+    return new Currency(code);
+  }
+
+  /**
+   * Creates a Currency instance from a type-safe currency code
+   *
+   * @param code The currency code from CurrencyCode enum
+   * @returns A new Currency instance
+   * @throws {InvalidCurrencyError} If the currency code is invalid
+   */
+  static from(code: CurrencyCode): Currency {
     return new Currency(code);
   }
 

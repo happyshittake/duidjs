@@ -1,5 +1,17 @@
 import { describe, expect, it } from "bun:test";
-import { Currency, ISO_CURRENCIES, InvalidCurrencyError, customCurrency, Money } from "../src";
+import {
+  Currency,
+  ISO_CURRENCIES,
+  InvalidCurrencyError,
+  customCurrency,
+  Money,
+  CurrencyCode,
+  money,
+  moneyFromString,
+  moneyFromMinorUnits,
+  moneyFromBigInt,
+  zero
+} from "../src";
 import type { CurrencyMetadata } from "../src";
 
 describe("Currency", () => {
@@ -149,6 +161,47 @@ describe("Currency", () => {
       expect(btc.name).toBe("Bitcoin");
       expect(btc.symbol).toBe("₿");
       expect(btc.decimalPlaces).toBe(8);
+    });
+
+    it("should create currency using type-safe enum with from method", () => {
+      const usd = Currency.from(CurrencyCode.USD);
+      
+      expect(usd.code).toBe("USD");
+      expect(usd.name).toBe("US Dollar");
+      expect(usd.symbol).toBe("$");
+      expect(usd.decimalPlaces).toBe(2);
+      
+      const jpy = Currency.from(CurrencyCode.JPY);
+      expect(jpy.code).toBe("JPY");
+      expect(jpy.decimalPlaces).toBe(0);
+    });
+    
+    it("should work with money functions directly using CurrencyCode enum", () => {
+      // With money function
+      const euros = money(15.99, CurrencyCode.EUR);
+      expect(euros.currency.code).toBe("EUR");
+      expect(euros.format()).toBe("€15.99");
+      
+      // With moneyFromString function
+      const pounds = moneyFromString("29.99", CurrencyCode.GBP);
+      expect(pounds.currency.code).toBe("GBP");
+      expect(pounds.format()).toBe("£29.99");
+      
+      // With moneyFromMinorUnits function
+      const cents = moneyFromMinorUnits(5099, CurrencyCode.USD);
+      expect(cents.currency.code).toBe("USD");
+      expect(cents.format()).toBe("$50.99");
+      
+      // With moneyFromBigInt function
+      const yen = moneyFromBigInt(5000n, CurrencyCode.JPY);
+      expect(yen.currency.code).toBe("JPY");
+      expect(yen.format()).toBe("¥5,000");
+      
+      // With zero function
+      const zeroRupees = zero(CurrencyCode.INR);
+      expect(zeroRupees.currency.code).toBe("INR");
+      expect(zeroRupees.isZero()).toBe(true);
+      expect(zeroRupees.format()).toBe("₹0.00");
     });
 
     it("should create currency from metadata using customCurrency function", () => {

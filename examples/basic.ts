@@ -9,6 +9,7 @@ import {
   moneyFromBigInt,
   zero,
   Currency,
+  CurrencyCode,
   customCurrency,
   formatAccounting,
   formatFinancial,
@@ -168,3 +169,22 @@ console.log('Ethereum amount:', ethAmount.format()); // Ξ1.500000000000000000
 // Format with specific options
 console.log('BTC with code:', btcAmount.format({ code: true, symbol: false })); // 0.05000000 BTC
 console.log('ETH with 4 decimals:', ethAmount.format({ decimalPlaces: 4 })); // Ξ1.5000
+
+// Type-safe currency codes
+console.log('\n--- Type-Safe Currency Codes ---');
+
+// Using CurrencyCode enum with Currency.from()
+const typeSafeUsd = Currency.from(CurrencyCode.USD);
+console.log('Type-safe USD currency:', typeSafeUsd.code, typeSafeUsd.symbol);
+
+// Using CurrencyCode enum directly with money functions
+const yenAmount = money(10000, CurrencyCode.JPY);
+console.log('Yen amount using enum:', yenAmount.format());
+
+const rupiah = moneyFromString('50000', CurrencyCode.IDR);
+console.log('Rupiah amount using enum:', rupiah.format());
+
+// Comparing approaches
+console.log('\nComparing approaches:');
+console.log('String approach: money(100, "SGD")');
+console.log('Type-safe approach: money(100, CurrencyCode.SGD)');
