@@ -6,6 +6,7 @@ import { ISO_CURRENCIES } from "./currencies/iso";
 import type { CurrencyMetadata } from "./currencies/iso";
 import { CurrencyCode } from "./currencies/codes";
 import { InvalidCurrencyError } from "./errors";
+import { RoundingMode, RoundingConfig, round as roundValue } from "./rounding";
 
 /**
  * Options for formatting currency values
@@ -191,27 +192,48 @@ export class Currency {
   }
 
   /**
+   * Rounds an amount according to this currency's decimal places
+   *
+   * @param amount The amount to round
+   * @param mode The rounding mode to use (defaults to global default)
+   * @returns The rounded amount as a string
+   */
+  round(
+    amount: number | string,
+    mode: RoundingMode = RoundingConfig.defaultRoundingMode
+  ): string {
+    return roundValue(amount, this.decimalPlaces, mode);
+  }
+
+  /**
    * Converts an amount from major units to minor units
    *
    * @param amount The amount in major units
+   * @param mode The rounding mode to use (defaults to global default)
    * @returns The amount in minor units as a BigInt
    */
-  toMinorUnits(amount: number | string): bigint {
+  toMinorUnits(
+    amount: number | string,
+    mode: RoundingMode = RoundingConfig.defaultRoundingMode
+  ): bigint {
     const factor = this.getDecimalFactor();
 
     if (typeof amount === "number") {
       // Handle potential floating point precision issues
       const amountStr = amount.toFixed(this.decimalPlaces + 8);
-      return this.toMinorUnits(amountStr);
+      return this.toMinorUnits(amountStr, mode);
     } else {
-      // Parse string representation
-      const [integerPart, fractionalPart = ""] = amount.split(".");
-
-      // Pad or truncate fractional part to match decimal places
+      // Round the string representation according to the specified mode
+      const roundedAmount = this.round(amount, mode);
+      
+      // Parse rounded amount
+      const [integerPart, fractionalPart = ""] = roundedAmount.split(".");
+      
+      // Pad fractional part to match decimal places
       const paddedFractionalPart = fractionalPart
         .padEnd(this.decimalPlaces, "0")
         .slice(0, this.decimalPlaces);
-
+      
       // Combine parts and convert to BigInt
       return BigInt(integerPart + paddedFractionalPart);
     }

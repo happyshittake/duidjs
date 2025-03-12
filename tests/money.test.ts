@@ -12,6 +12,7 @@ import {
   CurrencyMismatchError,
   InvalidAmountError,
   InvalidOperationError,
+  RoundingMode,
 } from "../src";
 
 describe("Money", () => {
@@ -98,6 +99,29 @@ describe("Money", () => {
       
       expect(result.getAmount()).toBe("3.50");
       expect(result.currency.code).toBe("USD");
+    });
+    
+    it("should respect rounding when dividing", () => {
+      // Test with 3 decimal places (BHD)
+      const m1 = money(10, "BHD");
+      const result1 = m1.divide(7);
+      expect(result1.getAmount()).toBe("1.429"); // Rounded to 3 decimal places
+      expect(result1.getAmountInMinorUnits()).toBe(1429n);
+      
+      // Test with 2 decimal places (USD)
+      const m2 = money(10, "USD");
+      const result2 = m2.divide(7);
+      expect(result2.getAmount()).toBe("1.43"); // Rounded to 2 decimal places
+      expect(result2.getAmountInMinorUnits()).toBe(143n);
+      
+      // Test with different rounding modes
+      const m3 = money(10, "USD");
+      const result3 = m3.divide(7, RoundingMode.FLOOR);
+      expect(result3.getAmount()).toBe("1.42"); // Floor rounding
+      
+      const m4 = money(10, "USD");
+      const result4 = m4.divide(7, RoundingMode.CEILING);
+      expect(result4.getAmount()).toBe("1.43"); // Ceiling rounding
     });
 
     it("should calculate ratio between money values", () => {

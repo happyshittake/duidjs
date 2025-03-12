@@ -10,6 +10,9 @@
 export { Money } from './money';
 export { Currency } from './currency';
 
+// Export rounding functionality
+export { RoundingMode, RoundingConfig, round } from './rounding';
+
 // Export currency data
 export { ISO_CURRENCIES } from './currencies/iso';
 export type { CurrencyMetadata } from './currencies/iso';
@@ -40,23 +43,29 @@ import { Money } from './money';
 import { Currency } from './currency';
 import type { CurrencyMetadata } from './currencies/iso';
 import { CurrencyCode } from './currencies/codes';
+import { RoundingMode } from './rounding';
 
 /**
  * Creates a Money instance from a floating-point amount
  *
  * @param amount The amount in major units (e.g., dollars) as a floating-point number
  * @param currency The currency code, CurrencyCode enum, or Currency instance
+ * @param roundingMode The rounding mode to use (optional)
  * @returns A new Money instance
  */
-export function money(amount: number, currency: string | CurrencyCode | Currency): Money {
+export function money(
+  amount: number,
+  currency: string | CurrencyCode | Currency,
+  roundingMode?: RoundingMode
+): Money {
   if (typeof currency === 'string') {
-    return Money.fromFloat(amount, currency);
+    return Money.fromFloat(amount, currency, roundingMode);
   }
   if (currency instanceof Currency) {
-    return Money.fromFloat(amount, currency);
+    return Money.fromFloat(amount, currency, roundingMode);
   }
   // Handle CurrencyCode enum
-  return Money.fromFloat(amount, Currency.from(currency));
+  return Money.fromFloat(amount, Currency.from(currency), roundingMode);
 }
 
 /**
@@ -64,17 +73,22 @@ export function money(amount: number, currency: string | CurrencyCode | Currency
  *
  * @param amount The amount in major units (e.g., dollars) as a string
  * @param currency The currency code, CurrencyCode enum, or Currency instance
+ * @param roundingMode The rounding mode to use (optional)
  * @returns A new Money instance
  */
-export function moneyFromString(amount: string, currency: string | CurrencyCode | Currency): Money {
+export function moneyFromString(
+  amount: string,
+  currency: string | CurrencyCode | Currency,
+  roundingMode?: RoundingMode
+): Money {
   if (typeof currency === 'string') {
-    return Money.fromString(amount, currency);
+    return Money.fromString(amount, currency, roundingMode);
   }
   if (currency instanceof Currency) {
-    return Money.fromString(amount, currency);
+    return Money.fromString(amount, currency, roundingMode);
   }
   // Handle CurrencyCode enum
-  return Money.fromString(amount, Currency.from(currency));
+  return Money.fromString(amount, Currency.from(currency), roundingMode);
 }
 
 /**

@@ -4,6 +4,7 @@
 
 import { Currency } from './currency';
 import type { FormatOptions } from './currency';
+import { RoundingMode, RoundingConfig } from './rounding';
 import {
   AllocationError,
   CurrencyMismatchError,
@@ -33,20 +34,25 @@ export class Money {
 
   /**
    * Creates a Money instance from a floating-point amount
-   * 
+   *
    * @param amount The amount in major units (e.g., dollars) as a floating-point number
    * @param currency The currency code or Currency instance
+   * @param roundingMode The rounding mode to use (optional)
    * @returns A new Money instance
    * @throws {InvalidCurrencyError} If the currency code is invalid
    * @throws {InvalidAmountError} If the amount is invalid
    */
-  static fromFloat(amount: number, currency: Currency | string): Money {
+  static fromFloat(
+    amount: number,
+    currency: Currency | string,
+    roundingMode?: RoundingMode
+  ): Money {
     if (isNaN(amount) || !isFinite(amount)) {
       throw new InvalidAmountError(`Invalid amount: ${amount}`);
     }
 
     const currencyObj = typeof currency === 'string' ? new Currency(currency) : currency;
-    const amountInMinorUnits = currencyObj.toMinorUnits(amount);
+    const amountInMinorUnits = currencyObj.toMinorUnits(amount, roundingMode);
     
     return new Money(amountInMinorUnits, currencyObj);
   }
@@ -72,20 +78,25 @@ export class Money {
 
   /**
    * Creates a Money instance from a string amount
-   * 
+   *
    * @param amount The amount in major units (e.g., dollars) as a string
    * @param currency The currency code or Currency instance
+   * @param roundingMode The rounding mode to use (optional)
    * @returns A new Money instance
    * @throws {InvalidCurrencyError} If the currency code is invalid
    * @throws {InvalidAmountError} If the amount is invalid
    */
-  static fromString(amount: string, currency: Currency | string): Money {
+  static fromString(
+    amount: string,
+    currency: Currency | string,
+    roundingMode?: RoundingMode
+  ): Money {
     if (!/^-?\d+(\.\d+)?$/.test(amount)) {
       throw new InvalidAmountError(`Invalid amount format: ${amount}`);
     }
 
     const currencyObj = typeof currency === 'string' ? new Currency(currency) : currency;
-    const amountInMinorUnits = currencyObj.toMinorUnits(amount);
+    const amountInMinorUnits = currencyObj.toMinorUnits(amount, roundingMode);
     
     return new Money(amountInMinorUnits, currencyObj);
   }
@@ -182,39 +193,71 @@ export class Money {
    * Divides this Money instance by a divisor
    *
    * @param divisor The divisor
+   * @param roundingMode The rounding mode to use (defaults to global default)
    * @returns A new Money instance with the quotient
    * @throws {InvalidAmountError} If the divisor is invalid or zero
    */
-  divide(divisor: number | bigint): Money {
+  divide(
+    divisor: number | bigint,
+    roundingMode: RoundingMode = RoundingConfig.defaultRoundingMode
+  ): Money {
     if (typeof divisor === 'number') {
       if (isNaN(divisor) || !isFinite(divisor) || divisor === 0) {
         throw new InvalidAmountError(`Invalid divisor: ${divisor}`);
       }
       
-      // Convert to string to avoid floating point precision issues
-      const divisorStr = divisor.toString();
+      // For division, we'll use a high-precision approach to ensure accurate rounding
+      // Convert the amount to a decimal string
+      const amountStr = this.currency.toMajorUnits(this.amount);
       
-      // Check if it's an integer
-      if (Number.isInteger(divisor)) {
-        return new Money(this.amount / BigInt(divisor), this.currency);
-      }
+      // Perform the division with high precision
+      const result = Number(amountStr) / divisor;
       
-      // For decimal divisors, we need to handle the decimal places
-      const [integerPart, fractionalPart = ''] = divisorStr.split('.');
-      const scale = BigInt(10 ** fractionalPart.length);
+      // Convert the result to a string with extra precision
+      const resultStr = result.toString();
       
-      const scaledDivisor = BigInt(integerPart) * scale + BigInt(fractionalPart);
-      const scaledAmount = this.amount * scale;
-      const result = scaledAmount / scaledDivisor;
+      // Use the Currency's rounding mechanism to round correctly
+      const roundedStr = this.currency.round(resultStr, roundingMode);
       
-      return new Money(result, this.currency);
+      // Create a new Money instance with the rounded result
+      return Money.fromString(roundedStr, this.currency);
     } else {
       // BigInt divisor
       if (divisor === 0n) {
         throw new InvalidAmountError('Division by zero');
       }
       
-      return new Money(this.amount / divisor, this.currency);
+      // For BigInt division, we need to scale up to ensure precision
+      // We'll scale up by a factor based on the currency's decimal places
+      // plus additional precision to ensure accurate rounding
+      const extraPrecision = 10;
+      const totalPrecision = this.currency.decimalPlaces + extraPrecision;
+      const scale = BigInt(10 ** totalPrecision);
+      
+      // Scale up the amount for precision
+      const scaledAmount = this.amount * scale;
+      
+      // Perform the division
+      const scaledResult = scaledAmount / divisor;
+      
+      // Convert to a decimal string for rounding
+      // We need to adjust for the extra precision we added
+      const decimalFactor = BigInt(10 ** extraPrecision);
+      const adjustedResult = scaledResult / decimalFactor;
+      const remainderResult = scaledResult % decimalFactor;
+      
+      // Convert to string with the remainder as a decimal part
+      let resultStr = adjustedResult.toString();
+      if (remainderResult > 0n) {
+        const remainderStr = remainderResult.toString().padStart(extraPrecision, '0');
+        resultStr = `${resultStr}.${remainderStr}`;
+      }
+      
+      // Use the Currency's rounding mechanism to round correctly
+      const roundedStr = this.currency.round(resultStr, roundingMode);
+      
+      // Create a new Money instance with the rounded result
+      return Money.fromString(roundedStr, this.currency);
     }
   }
 
