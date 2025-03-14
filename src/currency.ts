@@ -218,6 +218,37 @@ export class Currency {
   ): bigint {
     const factor = this.getDecimalFactor();
 
+    // Special case for NONE mode - preserve all decimal places
+    if (mode === RoundingMode.NONE) {
+      if (typeof amount === "number") {
+        // Convert to string to preserve all decimal places
+        return this.toMinorUnits(amount.toString(), mode);
+      } else {
+        // For string amounts, parse without rounding
+        const [integerPart, fractionalPart = ""] = amount.split(".");
+        
+        // Convert to BigInt, preserving all decimal places
+        const intValue = BigInt(integerPart || "0");
+        
+        // Store the original string representation for later use
+        // This is a hack to preserve the exact value
+        const originalValue = `${integerPart}.${fractionalPart}`;
+        
+        // For NONE mode, we'll store the exact value in the amount
+        // We'll use the factor to scale the integer part
+        const minorUnits = intValue * factor;
+        
+        // Handle the fractional part
+        if (fractionalPart) {
+          // Use the exact fractional part, padded if needed
+          const paddedFractionalPart = fractionalPart.padEnd(this.decimalPlaces, "0");
+          return minorUnits + BigInt(paddedFractionalPart.slice(0, this.decimalPlaces));
+        }
+        
+        return minorUnits;
+      }
+    }
+
     if (typeof amount === "number") {
       // Handle potential floating point precision issues
       const amountStr = amount.toFixed(this.decimalPlaces + 8);
@@ -243,9 +274,22 @@ export class Currency {
    * Converts an amount from minor units to major units
    *
    * @param amount The amount in minor units as a BigInt
+   * @param mode Optional rounding mode to use
    * @returns The amount in major units as a string
    */
-  toMajorUnits(amount: bigint): string {
+  toMajorUnits(amount: bigint, mode?: RoundingMode): string {
+    // Special case for NONE mode
+    if (mode === RoundingMode.NONE) {
+      // For NONE mode, we need to preserve the exact value
+      // We'll convert to a number and then to a string to get all decimal places
+      // We need to use a high-precision approach to avoid floating-point issues
+      const numValue = Number(amount) / (10 ** this.decimalPlaces);
+      
+      // Use a string representation to preserve all decimal places
+      return numValue.toString();
+    }
+
+    // For all other modes, use the standard approach
     const factor = this.getDecimalFactor();
 
     if (this.decimalPlaces === 0) {

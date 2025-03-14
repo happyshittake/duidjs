@@ -146,4 +146,79 @@ describe("Rounding", () => {
     const m4 = money(1.955, "USD", RoundingMode.HALF_EVEN);
     expect(m4.getAmount()).toBe("1.96"); // Rounds to 1.96 (even)
   });
+  
+  it("should preserve all decimal places with NONE mode", () => {
+    // Test with exact decimal representation
+    const m1 = money(1.98765, "USD", RoundingMode.NONE);
+    expect(m1.getAmount()).toBe("1.98765");
+    
+    // Test with division that produces repeating decimals
+    const m2 = money(100/3, "USD", RoundingMode.NONE);
+    // This should preserve all decimal places from the division
+    expect(m2.getAmount()).toBe("33.333333333333336");
+    
+    // Test with string amount
+    const m3 = moneyFromString("1.98765", "USD", RoundingMode.NONE);
+    expect(m3.getAmount()).toBe("1.98765");
+  });
+  
+  it("should handle NONE mode with different decimal places", () => {
+    // JPY (0 decimal places)
+    const m1 = money(1999.5, "JPY", RoundingMode.NONE);
+    expect(m1.getAmount()).toBe("1999.5");
+    
+    // BHD (3 decimal places)
+    const m2 = money(1.9995, "BHD", RoundingMode.NONE);
+    expect(m2.getAmount()).toBe("1.9995");
+  });
+  
+  it("should handle negative numbers with NONE mode", () => {
+    const m1 = money(-1.98765, "USD", RoundingMode.NONE);
+    expect(m1.getAmount()).toBe("-1.98765");
+    
+    const m2 = money(-100/3, "USD", RoundingMode.NONE);
+    expect(m2.getAmount()).toBe("-33.333333333333336");
+  });
+  
+  it("should allow specifying NONE mode in getAmount", () => {
+    // Create money with default rounding
+    const m = money(1.98765, "USD");
+    
+    // Get amount with different rounding modes
+    expect(m.getAmount()).toBe("1.99"); // Default rounding (HALF_UP)
+    expect(m.getAmount(RoundingMode.FLOOR)).toBe("1.98");
+    expect(m.getAmount(RoundingMode.CEILING)).toBe("1.99");
+    expect(m.getAmount(RoundingMode.NONE)).toBe("1.98765"); // No rounding
+  });
+  
+  it("should preserve all decimal places in add and subtract operations with NONE mode", () => {
+    // Test addition
+    const m1 = money(10.123, "USD", RoundingMode.NONE);
+    const m2 = money(5.456, "USD", RoundingMode.NONE);
+    const added = m1.add(m2, RoundingMode.NONE);
+    expect(added.getAmount(RoundingMode.NONE)).toBe("15.579");
+    
+    // Test subtraction
+    const subtracted = m1.subtract(m2, RoundingMode.NONE);
+    expect(subtracted.getAmount(RoundingMode.NONE)).toBe("4.667");
+  });
+  
+  it("should preserve all decimal places in multiply and divide operations with NONE mode", () => {
+    // Test multiplication
+    const m1 = money(10, "USD");
+    const multiplied = m1.multiply(3.33333, RoundingMode.NONE);
+    expect(multiplied.getAmount(RoundingMode.NONE)).toBe("33.3333");
+    
+    // Test division
+    const m2 = money(100, "USD");
+    const divided = m2.divide(3, RoundingMode.NONE);
+    expect(divided.getAmount(RoundingMode.NONE)).toBe("33.333333333333336");
+  });
+  
+  it("should apply NONE mode when using Currency.round method directly", () => {
+    const usd = new Currency("USD");
+    
+    expect(usd.round(1.98765, RoundingMode.NONE)).toBe("1.98765");
+    expect(usd.round(100/3, RoundingMode.NONE)).toBe("33.333333333333336");
+  });
 });

@@ -48,7 +48,13 @@ export enum RoundingMode {
    * Round towards nearest neighbor, ties round towards even neighbor
    * Example: 1.985 -> 1.98, 1.975 -> 1.98
    */
-  HALF_EVEN = "HALF_EVEN"
+  HALF_EVEN = "HALF_EVEN",
+  
+  /**
+   * No rounding - preserve all decimal places
+   * Example: 1.98765 -> 1.98765
+   */
+  NONE = "NONE"
 }
 
 /**
@@ -94,6 +100,11 @@ export function round(
   // Handle special cases
   if (isNaN(numValue) || !isFinite(numValue)) {
     throw new InvalidAmountError(`Cannot round invalid number: ${value}`);
+  }
+  
+  // Special case for NONE mode - preserve all decimal places
+  if (mode === RoundingMode.NONE) {
+    return numValue.toString();
   }
   
   // If decimal places is 0, we can use simpler methods
