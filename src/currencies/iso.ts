@@ -165,7 +165,7 @@ export const ISO_CURRENCIES: Record<string, CurrencyMetadata> = {
     code: "IDR",
     name: "Indonesian Rupiah",
     symbol: "Rp",
-    decimalPlaces: 0,
+    decimalPlaces: 2,
   },
   ILS: {
     code: "ILS",
