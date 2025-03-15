@@ -13,6 +13,8 @@ import {
   customCurrency,
   formatAccounting,
   formatFinancial,
+  formatMoney,
+  formatMoneyTable,
   ExchangeRateProvider,
   CurrencyConverter,
 } from '../src';
@@ -107,10 +109,30 @@ console.log('\n--- Formatting ---');
 const amount = money(1234.56, 'USD');
 const negativeAmount = money(-1234.56, 'USD');
 
+// Basic formatting
 console.log('Default:', amount.format());
 console.log('No symbol:', amount.format({ symbol: false }));
 console.log('With code:', amount.format({ code: true }));
 console.log('No grouping:', amount.format({ useGrouping: false }));
+
+// Enhanced formatting with formatMoney
+console.log('\n--- Enhanced Formatting ---');
+console.log('Show positive sign:', formatMoney(amount, { showPositiveSign: true }));
+console.log('Show currency name:', formatMoney(amount, { showCurrencyName: true }));
+console.log('Custom positive format:', formatMoney(amount, { positiveFormat: '+${amount}+' }));
+console.log('Custom negative format:', formatMoney(negativeAmount, { negativeFormat: '(${amount})' }));
+
+// Format money table
+console.log('\n--- Format Money Table ---');
+const tableValues = [
+  money(1234.56, 'USD'),
+  money(99.99, 'USD'),
+  money(-500, 'USD')
+];
+console.log(formatMoneyTable(tableValues));
+
+// Accounting and financial formatting
+console.log('\n--- Specialized Formatting ---');
 console.log('Accounting format (positive):', formatAccounting(amount));
 console.log('Accounting format (negative):', formatAccounting(negativeAmount));
 console.log('Financial format (positive):', formatFinancial(amount));

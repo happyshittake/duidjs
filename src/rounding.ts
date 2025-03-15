@@ -51,7 +51,7 @@ export enum RoundingMode {
   HALF_EVEN = "HALF_EVEN",
 
   /**
-   * No rounding - preserve all decimal places
+   * No rounding - preserve currency decimal places + 4 decimal places
    * Example: 1.98765 -> 1.98765
    */
   NONE = "NONE",
