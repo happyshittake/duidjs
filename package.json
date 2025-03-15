@@ -1,6 +1,6 @@
 {
   "name": "duidjs",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "A TypeScript library for handling money operations with precision using BigInt",
   "module": "dist/index.js",
   "main": "dist/index.js",
