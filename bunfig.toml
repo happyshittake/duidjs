@@ -1,0 +1,9 @@
+[test]
+# Always enable coverage
+coverage = true
+
+# Generate lcov report for the badge generator
+coverageReporter = ["text", "lcov"]
+
+# Set coverage directory
+coverageDir = "coverage"

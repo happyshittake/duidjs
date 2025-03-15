@@ -2,6 +2,8 @@
 
 A TypeScript library for handling money operations with precision using BigInt.
 
+![Coverage (main)](https://happyshittake.github.io/duidjs/badges/coverage.svg)
+
 ## Features
 
 - 💰 **Precise Money Representation**: Uses BigInt for accurate decimal arithmetic without floating-point errors
