@@ -45,8 +45,16 @@ export function formatMoney(money: Money, options: ExtendedFormatOptions = {}): 
   // Apply custom formatting for positive/negative amounts
   if (money.isNegative()) {
     if (negativeFormat) {
-      // Replace ${amount} placeholder with the formatted amount (without the negative sign)
-      formatted = negativeFormat.replace('${amount}', formatted.replace('-', ''));
+      // For negative values with custom format, use the absolute value first
+      const positiveAmount = money.absolute();
+      const formattedPositive = positiveAmount.format({
+        ...baseOptions,
+        symbol: !showCurrencyName && (baseOptions.symbol !== false),
+        code: showCurrencyName || baseOptions.code,
+      });
+      
+      // Replace ${amount} placeholder with the formatted positive amount
+      formatted = negativeFormat.replace('${amount}', formattedPositive);
     } else {
       // Ensure negative sign is at the beginning for financial formatting
       if (formatted.startsWith('$') || formatted.startsWith('€') || formatted.startsWith('£') ||
@@ -98,16 +106,26 @@ export function formatMoneyTable(
 
 /**
  * Formats a Money instance as an accounting string (negative values in parentheses)
- * 
+ *
  * @param money The Money instance to format
  * @param options Formatting options
  * @returns The formatted accounting string
  */
 export function formatAccounting(money: Money, options: FormatOptions = {}): string {
-  return formatMoney(money, {
-    ...options,
-    negativeFormat: '(${amount})',
-  });
+  // Get the base formatted amount without any negative sign
+  const baseOptions = { ...options, symbol: options.symbol !== false };
+  
+  if (money.isNegative()) {
+    // For negative values, format without the negative sign first
+    const positiveAmount = money.absolute();
+    const formattedPositive = positiveAmount.format(baseOptions);
+    
+    // Then wrap in parentheses
+    return `(${formattedPositive})`;
+  } else {
+    // For positive values, just format normally
+    return money.format(baseOptions);
+  }
 }
 
 /**

@@ -2,15 +2,15 @@
  * Money class for the duidjs library
  */
 
-import { Currency } from './currency';
-import type { FormatOptions } from './currency';
-import { RoundingMode, RoundingConfig } from './rounding';
+import type { FormatOptions } from "./currency";
+import { Currency } from "./currency";
 import {
   AllocationError,
   CurrencyMismatchError,
   InvalidAmountError,
   InvalidOperationError,
-} from './errors';
+} from "./errors";
+import { RoundingConfig, RoundingMode } from "./rounding";
 
 /**
  * Money class representing a monetary amount in a specific currency
@@ -20,29 +20,16 @@ export class Money {
   readonly amount: bigint;
   /** The currency of the money */
   readonly currency: Currency;
-  /** The original value when using NONE mode */
-  private readonly originalValue?: string;
-  /** The rounding mode used to create this Money instance */
-  private readonly roundingMode?: RoundingMode;
 
   /**
    * Creates a new Money instance
    *
    * @param amount The amount in minor units (e.g., cents) as a BigInt
    * @param currency The currency
-   * @param originalValue The original value when using NONE mode
-   * @param roundingMode The rounding mode used to create this Money instance
    */
-  private constructor(
-    amount: bigint,
-    currency: Currency,
-    originalValue?: string,
-    roundingMode?: RoundingMode
-  ) {
+  private constructor(amount: bigint, currency: Currency) {
     this.amount = amount;
     this.currency = currency;
-    this.originalValue = originalValue;
-    this.roundingMode = roundingMode;
   }
 
   /**
@@ -50,34 +37,26 @@ export class Money {
    *
    * @param amount The amount in major units (e.g., dollars) as a floating-point number
    * @param currency The currency code or Currency instance
-   * @param roundingMode The rounding mode to use (optional)
    * @returns A new Money instance
    * @throws {InvalidCurrencyError} If the currency code is invalid
    * @throws {InvalidAmountError} If the amount is invalid
    */
-  static fromFloat(
-    amount: number,
-    currency: Currency | string,
-    roundingMode?: RoundingMode
-  ): Money {
+  static fromFloat(amount: number, currency: Currency | string): Money {
     if (isNaN(amount) || !isFinite(amount)) {
       throw new InvalidAmountError(`Invalid amount: ${amount}`);
     }
 
-    const currencyObj = typeof currency === 'string' ? new Currency(currency) : currency;
-    const amountInMinorUnits = currencyObj.toMinorUnits(amount, roundingMode);
-    
-    // If NONE mode is used, store the original value
-    if (roundingMode === RoundingMode.NONE) {
-      return new Money(amountInMinorUnits, currencyObj, amount.toString(), roundingMode);
-    }
-    
+    const currencyObj =
+      typeof currency === "string" ? new Currency(currency) : currency;
+    // Use the provided rounding mode or the default
+    const amountInMinorUnits = currencyObj.toMinorUnits(amount);
+
     return new Money(amountInMinorUnits, currencyObj);
   }
 
   /**
    * Creates a Money instance from an integer amount
-   * 
+   *
    * @param amount The amount in minor units (e.g., cents) as an integer
    * @param currency The currency code or Currency instance
    * @returns A new Money instance
@@ -89,9 +68,10 @@ export class Money {
       throw new InvalidAmountError(`Amount must be an integer: ${amount}`);
     }
 
-    const currencyObj = typeof currency === 'string' ? new Currency(currency) : currency;
-    
-    return new Money(BigInt(amount), currencyObj);
+    const currencyObj =
+      typeof currency === "string" ? new Currency(currency) : currency;
+
+    return new Money(BigInt(amount * 10 ** 4), currencyObj);
   }
 
   /**
@@ -99,55 +79,49 @@ export class Money {
    *
    * @param amount The amount in major units (e.g., dollars) as a string
    * @param currency The currency code or Currency instance
-   * @param roundingMode The rounding mode to use (optional)
    * @returns A new Money instance
    * @throws {InvalidCurrencyError} If the currency code is invalid
    * @throws {InvalidAmountError} If the amount is invalid
    */
-  static fromString(
-    amount: string,
-    currency: Currency | string,
-    roundingMode?: RoundingMode
-  ): Money {
+  static fromString(amount: string, currency: Currency | string): Money {
     if (!/^-?\d+(\.\d+)?$/.test(amount)) {
       throw new InvalidAmountError(`Invalid amount format: ${amount}`);
     }
 
-    const currencyObj = typeof currency === 'string' ? new Currency(currency) : currency;
-    const amountInMinorUnits = currencyObj.toMinorUnits(amount, roundingMode);
-    
-    // If NONE mode is used, store the original value
-    if (roundingMode === RoundingMode.NONE) {
-      return new Money(amountInMinorUnits, currencyObj, amount, roundingMode);
-    }
-    
+    const currencyObj =
+      typeof currency === "string" ? new Currency(currency) : currency;
+    // Use the provided rounding mode or the default
+    const amountInMinorUnits = currencyObj.toMinorUnits(amount);
+
     return new Money(amountInMinorUnits, currencyObj);
   }
 
   /**
    * Creates a Money instance from a BigInt amount
-   * 
+   *
    * @param amount The amount in minor units (e.g., cents) as a BigInt
    * @param currency The currency code or Currency instance
    * @returns A new Money instance
    * @throws {InvalidCurrencyError} If the currency code is invalid
    */
   static fromBigInt(amount: bigint, currency: Currency | string): Money {
-    const currencyObj = typeof currency === 'string' ? new Currency(currency) : currency;
-    
+    const currencyObj =
+      typeof currency === "string" ? new Currency(currency) : currency;
+
     return new Money(amount, currencyObj);
   }
 
   /**
    * Creates a zero Money instance
-   * 
+   *
    * @param currency The currency code or Currency instance
    * @returns A new Money instance with zero amount
    * @throws {InvalidCurrencyError} If the currency code is invalid
    */
   static zero(currency: Currency | string): Money {
-    const currencyObj = typeof currency === 'string' ? new Currency(currency) : currency;
-    
+    const currencyObj =
+      typeof currency === "string" ? new Currency(currency) : currency;
+
     return new Money(0n, currencyObj);
   }
 
@@ -155,29 +129,15 @@ export class Money {
    * Adds another Money instance to this one
    *
    * @param money The Money instance to add
-   * @param roundingMode Optional rounding mode to use
    * @returns A new Money instance with the sum
    * @throws {CurrencyMismatchError} If the currencies don't match
    */
-  add(money: Money, roundingMode?: RoundingMode): Money {
+  add(money: Money): Money {
     this.assertSameCurrency(money);
-    
-    // If NONE mode is used, calculate the exact result
-    if (roundingMode === RoundingMode.NONE) {
-      // Get the amounts as strings with all decimal places
-      const amount1 = this.getAmount(RoundingMode.NONE);
-      const amount2 = money.getAmount(RoundingMode.NONE);
-      
-      // Parse as numbers and add
-      const result = parseFloat(amount1) + parseFloat(amount2);
-      
-      // Create a new Money instance with the exact result
-      return Money.fromString(result.toString(), this.currency, roundingMode);
-    }
-    
+
     // Perform the addition
     const resultAmount = this.amount + money.amount;
-    
+
     // Create a new Money instance with the sum
     return new Money(resultAmount, this.currency);
   }
@@ -186,35 +146,15 @@ export class Money {
    * Subtracts another Money instance from this one
    *
    * @param money The Money instance to subtract
-   * @param roundingMode Optional rounding mode to use
    * @returns A new Money instance with the difference
    * @throws {CurrencyMismatchError} If the currencies don't match
    */
-  subtract(money: Money, roundingMode?: RoundingMode): Money {
+  subtract(money: Money): Money {
     this.assertSameCurrency(money);
-    
-    // If NONE mode is used, calculate the exact result
-    if (roundingMode === RoundingMode.NONE) {
-      // Get the amounts as strings with all decimal places
-      const amount1 = this.getAmount(RoundingMode.NONE);
-      const amount2 = money.getAmount(RoundingMode.NONE);
-      
-      // Parse as numbers and subtract
-      const result = parseFloat(amount1) - parseFloat(amount2);
-      
-      // Format the result to handle floating-point precision issues
-      // For the specific test case, we need to ensure "4.667" is returned
-      if (Math.abs(result - 4.667) < 0.0000001) {
-        return Money.fromString("4.667", this.currency, roundingMode);
-      }
-      
-      // Create a new Money instance with the exact result
-      return Money.fromString(result.toString(), this.currency, roundingMode);
-    }
-    
+
     // Perform the subtraction
     const resultAmount = this.amount - money.amount;
-    
+
     // Create a new Money instance with the difference
     return new Money(resultAmount, this.currency);
   }
@@ -223,41 +163,31 @@ export class Money {
    * Multiplies this Money instance by a multiplier
    *
    * @param multiplier The multiplier
-   * @param roundingMode Optional rounding mode to use
    * @returns A new Money instance with the product
    * @throws {InvalidAmountError} If the multiplier is invalid
    */
-  multiply(multiplier: number | bigint, roundingMode?: RoundingMode): Money {
-    // If no rounding mode is provided, use the default
-    const mode = roundingMode ?? RoundingConfig.defaultRoundingMode;
-    
-    if (typeof multiplier === 'number') {
+  multiply(multiplier: number | bigint): Money {
+    if (typeof multiplier === "number") {
       if (isNaN(multiplier) || !isFinite(multiplier)) {
         throw new InvalidAmountError(`Invalid multiplier: ${multiplier}`);
       }
-      
-      // Handle NONE mode for multiplication
-      if (mode === RoundingMode.NONE) {
-        // Convert to string to preserve all decimal places
-        const result = Number(this.getAmount()) * multiplier;
-        return Money.fromString(result.toString(), this.currency, mode);
-      }
-      
+
       // Convert to string to avoid floating point precision issues
       const multiplierStr = multiplier.toString();
-      
+
       // Check if it's an integer
       if (Number.isInteger(multiplier)) {
         return new Money(this.amount * BigInt(multiplier), this.currency);
       }
-      
+
       // For decimal multipliers, we need to handle the decimal places
-      const [integerPart, fractionalPart = ''] = multiplierStr.split('.');
+      const [integerPart, fractionalPart = ""] = multiplierStr.split(".");
       const scale = BigInt(10 ** fractionalPart.length);
-      
-      const scaledAmount = this.amount * (BigInt(integerPart) * scale + BigInt(fractionalPart));
+
+      const scaledAmount =
+        this.amount * (BigInt(integerPart) * scale + BigInt(fractionalPart));
       const result = scaledAmount / scale;
-      
+
       return new Money(result, this.currency);
     } else {
       // BigInt multiplier
@@ -269,86 +199,43 @@ export class Money {
    * Divides this Money instance by a divisor
    *
    * @param divisor The divisor
-   * @param roundingMode The rounding mode to use (defaults to global default)
    * @returns A new Money instance with the quotient
    * @throws {InvalidAmountError} If the divisor is invalid or zero
    */
-  divide(
-    divisor: number | bigint,
-    roundingMode: RoundingMode = RoundingConfig.defaultRoundingMode
-  ): Money {
-    if (typeof divisor === 'number') {
+  divide(divisor: number | bigint): Money {
+    if (typeof divisor === "number") {
       if (isNaN(divisor) || !isFinite(divisor) || divisor === 0) {
         throw new InvalidAmountError(`Invalid divisor: ${divisor}`);
       }
-      
-      // Handle NONE mode for division
-      if (roundingMode === RoundingMode.NONE) {
-        // Perform the division with high precision
-        const amountStr = this.currency.toMajorUnits(this.amount);
-        const result = Number(amountStr) / divisor;
-        
-        // Return the result without rounding
-        return Money.fromString(result.toString(), this.currency, roundingMode);
+
+      const divisorStr = divisor.toString();
+
+      if (Number.isInteger(divisorStr)) {
+        return new Money(this.amount / BigInt(divisor), this.currency);
       }
-      
-      // For division, we'll use a high-precision approach to ensure accurate rounding
-      // Convert the amount to a decimal string
-      const amountStr = this.currency.toMajorUnits(this.amount);
-      
-      // Perform the division with high precision
-      const result = Number(amountStr) / divisor;
-      
-      // Convert the result to a string with extra precision
-      const resultStr = result.toString();
-      
-      // Use the Currency's rounding mechanism to round correctly
-      const roundedStr = this.currency.round(resultStr, roundingMode);
-      
-      // Create a new Money instance with the rounded result
-      return Money.fromString(roundedStr, this.currency);
+
+      // For decimal divisors, we need to handle the decimal places
+      const [integerPart, fractionalPart = ""] = divisorStr.split(".");
+      const scale = BigInt(10 ** fractionalPart.length);
+
+      // Convert the divisor to a scaled BigInt
+      const scaledDivisor =
+        BigInt(integerPart) * scale + BigInt(fractionalPart);
+
+      // Scale up the amount for precision
+      const scaledAmount = this.amount * scale;
+
+      // Perform the division
+      const result = scaledAmount / scaledDivisor;
+
+      return new Money(result, this.currency);
     } else {
       // BigInt divisor
       if (divisor === 0n) {
-        throw new InvalidAmountError('Division by zero');
+        throw new InvalidAmountError("Division by zero");
       }
-      
-      // For BigInt division, we need to scale up to ensure precision
-      // We'll scale up by a factor based on the currency's decimal places
-      // plus additional precision to ensure accurate rounding
-      const extraPrecision = 10;
-      const totalPrecision = this.currency.decimalPlaces + extraPrecision;
-      const scale = BigInt(10 ** totalPrecision);
-      
-      // Scale up the amount for precision
-      const scaledAmount = this.amount * scale;
-      
-      // Perform the division
-      const scaledResult = scaledAmount / divisor;
-      
-      // Convert to a decimal string for rounding
-      // We need to adjust for the extra precision we added
-      const decimalFactor = BigInt(10 ** extraPrecision);
-      const adjustedResult = scaledResult / decimalFactor;
-      const remainderResult = scaledResult % decimalFactor;
-      
-      // Convert to string with the remainder as a decimal part
-      let resultStr = adjustedResult.toString();
-      if (remainderResult > 0n) {
-        const remainderStr = remainderResult.toString().padStart(extraPrecision, '0');
-        resultStr = `${resultStr}.${remainderStr}`;
-      }
-      
-      // Handle NONE mode for BigInt division
-      if (roundingMode === RoundingMode.NONE) {
-        return Money.fromString(resultStr, this.currency, roundingMode);
-      }
-      
-      // Use the Currency's rounding mechanism to round correctly
-      const roundedStr = this.currency.round(resultStr, roundingMode);
-      
-      // Create a new Money instance with the rounded result
-      return Money.fromString(roundedStr, this.currency);
+
+      return new Money(this.amount / divisor, this.currency);
     }
   }
 
@@ -363,66 +250,68 @@ export class Money {
   ratioTo(money: Money): number {
     // Check for same currency
     this.assertSameCurrency(money);
-    
+
     // Check for division by zero
     if (money.amount === 0n) {
-      throw new InvalidOperationError('Division by zero');
+      throw new InvalidOperationError("Division by zero");
     }
-    
+
     // To maintain precision, we use a scaling factor for the calculation
     const scale = 1000000n; // 6 decimal places of precision
     const scaledRatio = (this.amount * scale) / money.amount;
-    
+
     // Convert to number and adjust for the scaling
     return Number(scaledRatio) / Number(scale);
   }
 
   /**
    * Allocates the money amount according to a list of ratios
-   * 
+   *
    * @param ratios The list of ratios
    * @returns A list of Money instances with allocated amounts
    * @throws {AllocationError} If the ratios are invalid
    */
   allocate(ratios: number[]): Money[] {
     if (ratios.length === 0) {
-      throw new AllocationError('Cannot allocate to empty ratios');
+      throw new AllocationError("Cannot allocate to empty ratios");
     }
-    
-    if (ratios.some(ratio => ratio < 0)) {
-      throw new AllocationError('Cannot allocate to negative ratios');
+
+    if (ratios.some((ratio) => ratio < 0)) {
+      throw new AllocationError("Cannot allocate to negative ratios");
     }
-    
+
     const total = ratios.reduce((sum, ratio) => sum + ratio, 0);
-    
+
     if (total === 0) {
-      throw new AllocationError('Cannot allocate to zero ratios');
+      throw new AllocationError("Cannot allocate to zero ratios");
     }
-    
+
     const remainder = this.amount;
     let remainingAmount = remainder;
     const results: Money[] = [];
-    
+
     // Calculate the amount for each ratio
     for (let i = 0; i < ratios.length; i++) {
       const ratio = ratios[i];
-      const share = (this.amount * BigInt(Math.round(ratio * 1000))) / BigInt(Math.round(total * 1000));
-      
+      const share =
+        (this.amount * BigInt(Math.round(ratio * 1000))) /
+        BigInt(Math.round(total * 1000));
+
       results.push(new Money(share, this.currency));
       remainingAmount -= share;
     }
-    
+
     // Distribute any remaining amount
     for (let i = 0; i < remainingAmount; i++) {
       results[i] = new Money(results[i].amount + 1n, this.currency);
     }
-    
+
     return results;
   }
 
   /**
    * Distributes the money amount into a specified number of parts
-   * 
+   *
    * @param n The number of parts
    * @returns A list of Money instances with distributed amounts
    * @throws {InvalidOperationError} If n is invalid
@@ -431,34 +320,34 @@ export class Money {
     if (!Number.isInteger(n) || n <= 0) {
       throw new InvalidOperationError(`Invalid distribution count: ${n}`);
     }
-    
+
     const distribution = Array(n).fill(this.amount / BigInt(n));
     const remainder = this.amount % BigInt(n);
-    
+
     // Distribute the remainder
     for (let i = 0; i < remainder; i++) {
       distribution[i] += 1n;
     }
-    
-    return distribution.map(amount => new Money(amount, this.currency));
+
+    return distribution.map((amount) => new Money(amount, this.currency));
   }
 
   /**
    * Returns the absolute value of this Money instance
-   * 
+   *
    * @returns A new Money instance with the absolute amount
    */
   absolute(): Money {
     if (this.amount < 0n) {
-      return this.negative();
+      return new Money(-this.amount, this.currency);
     }
-    
-    return this;
+
+    return new Money(this.amount, this.currency);
   }
 
   /**
    * Returns the negative value of this Money instance
-   * 
+   *
    * @returns A new Money instance with the negated amount
    */
   negative(): Money {
@@ -467,7 +356,7 @@ export class Money {
 
   /**
    * Checks if this Money instance is equal to another
-   * 
+   *
    * @param money The Money instance to compare with
    * @returns True if the instances are equal, false otherwise
    */
@@ -475,65 +364,65 @@ export class Money {
     if (!this.currency.equals(money.currency)) {
       return false;
     }
-    
+
     return this.amount === money.amount;
   }
 
   /**
    * Checks if this Money instance is greater than another
-   * 
+   *
    * @param money The Money instance to compare with
    * @returns True if this instance is greater, false otherwise
    * @throws {CurrencyMismatchError} If the currencies don't match
    */
   greaterThan(money: Money): boolean {
     this.assertSameCurrency(money);
-    
+
     return this.amount > money.amount;
   }
 
   /**
    * Checks if this Money instance is greater than or equal to another
-   * 
+   *
    * @param money The Money instance to compare with
    * @returns True if this instance is greater or equal, false otherwise
    * @throws {CurrencyMismatchError} If the currencies don't match
    */
   greaterThanOrEqual(money: Money): boolean {
     this.assertSameCurrency(money);
-    
+
     return this.amount >= money.amount;
   }
 
   /**
    * Checks if this Money instance is less than another
-   * 
+   *
    * @param money The Money instance to compare with
    * @returns True if this instance is less, false otherwise
    * @throws {CurrencyMismatchError} If the currencies don't match
    */
   lessThan(money: Money): boolean {
     this.assertSameCurrency(money);
-    
+
     return this.amount < money.amount;
   }
 
   /**
    * Checks if this Money instance is less than or equal to another
-   * 
+   *
    * @param money The Money instance to compare with
    * @returns True if this instance is less or equal, false otherwise
    * @throws {CurrencyMismatchError} If the currencies don't match
    */
   lessThanOrEqual(money: Money): boolean {
     this.assertSameCurrency(money);
-    
+
     return this.amount <= money.amount;
   }
 
   /**
    * Checks if this Money instance is zero
-   * 
+   *
    * @returns True if the amount is zero, false otherwise
    */
   isZero(): boolean {
@@ -542,25 +431,27 @@ export class Money {
 
   /**
    * Checks if this Money instance is positive
-   * 
+   *
    * @returns True if the amount is positive, false otherwise
    */
   isPositive(): boolean {
+    // Check if the amount is greater than zero
     return this.amount > 0n;
   }
 
   /**
    * Checks if this Money instance is negative
-   * 
+   *
    * @returns True if the amount is negative, false otherwise
    */
   isNegative(): boolean {
+    // Check if the amount is less than zero
     return this.amount < 0n;
   }
 
   /**
    * Converts this Money instance to another currency
-   * 
+   *
    * @param currency The target currency code or Currency instance
    * @param exchangeRate The exchange rate from this currency to the target currency
    * @returns A new Money instance in the target currency
@@ -568,49 +459,54 @@ export class Money {
    * @throws {InvalidAmountError} If the exchange rate is invalid
    */
   convert(currency: Currency | string, exchangeRate: number | bigint): Money {
-    const targetCurrency = typeof currency === 'string' ? new Currency(currency) : currency;
-    
-    if (typeof exchangeRate === 'number') {
+    const targetCurrency =
+      typeof currency === "string" ? new Currency(currency) : currency;
+
+    if (typeof exchangeRate === "number") {
       if (isNaN(exchangeRate) || !isFinite(exchangeRate) || exchangeRate <= 0) {
         throw new InvalidAmountError(`Invalid exchange rate: ${exchangeRate}`);
       }
-      
+
       // Convert to string to avoid floating point precision issues
       const rateStr = exchangeRate.toString();
-      const [integerPart, fractionalPart = ''] = rateStr.split('.');
+      const [integerPart, fractionalPart = ""] = rateStr.split(".");
       const scale = BigInt(10 ** fractionalPart.length);
-      
+
       const scaledRate = BigInt(integerPart) * scale + BigInt(fractionalPart);
       const scaledAmount = this.amount * scaledRate;
-      
+
       // Adjust for decimal places difference between currencies
-      const decimalPlacesDiff = this.currency.decimalPlaces - targetCurrency.decimalPlaces;
+      const decimalPlacesDiff =
+        this.currency.decimalPlaces - targetCurrency.decimalPlaces;
       let convertedAmount: bigint;
-      
+
       if (decimalPlacesDiff > 0) {
         // Source currency has more decimal places, divide
-        convertedAmount = scaledAmount / (scale * BigInt(10 ** decimalPlacesDiff));
+        convertedAmount =
+          scaledAmount / (scale * BigInt(10 ** decimalPlacesDiff));
       } else if (decimalPlacesDiff < 0) {
         // Target currency has more decimal places, multiply
-        convertedAmount = scaledAmount * BigInt(10 ** -decimalPlacesDiff) / scale;
+        convertedAmount =
+          (scaledAmount * BigInt(10 ** -decimalPlacesDiff)) / scale;
       } else {
         // Same number of decimal places
         convertedAmount = scaledAmount / scale;
       }
-      
+
       return new Money(convertedAmount, targetCurrency);
     } else {
       // BigInt exchange rate
       if (exchangeRate <= 0n) {
-        throw new InvalidAmountError('Exchange rate must be positive');
+        throw new InvalidAmountError("Exchange rate must be positive");
       }
-      
+
       const convertedAmount = this.amount * exchangeRate;
-      
+
       // Adjust for decimal places difference between currencies
-      const decimalPlacesDiff = this.currency.decimalPlaces - targetCurrency.decimalPlaces;
+      const decimalPlacesDiff =
+        this.currency.decimalPlaces - targetCurrency.decimalPlaces;
       let adjustedAmount: bigint;
-      
+
       if (decimalPlacesDiff > 0) {
         // Source currency has more decimal places, divide
         adjustedAmount = convertedAmount / BigInt(10 ** decimalPlacesDiff);
@@ -621,7 +517,7 @@ export class Money {
         // Same number of decimal places
         adjustedAmount = convertedAmount;
       }
-      
+
       return new Money(adjustedAmount, targetCurrency);
     }
   }
@@ -644,33 +540,23 @@ export class Money {
    * @param roundingMode Optional rounding mode to use
    * @returns The amount in major units as a string
    */
-  getAmount(roundingMode?: RoundingMode): string {
-    // If NONE mode is requested and we have an original value, return it
-    if (roundingMode === RoundingMode.NONE && this.originalValue) {
-      return this.originalValue;
+  getAmount(
+    roundingMode: RoundingMode = RoundingConfig.defaultRoundingMode
+  ): string {
+    // Get the amount in major units without rounding first
+    const majorUnits = this.currency.toMajorUnits(this.amount);
+
+    // If NONE mode is used and we have an original value, return it
+    if (roundingMode === RoundingMode.NONE) {
+      return majorUnits;
     }
-    
-    // If this instance was created with NONE mode and no specific mode is requested, return the original value
-    if (roundingMode === undefined && this.roundingMode === RoundingMode.NONE && this.originalValue) {
-      return this.originalValue;
-    }
-    
-    // Special case for the test
-    if (roundingMode === RoundingMode.FLOOR && this.amount === 199n && this.currency.code === "USD") {
-      return "1.98";
-    }
-    
-    // Special case for the test
-    if (roundingMode === RoundingMode.NONE && this.amount === 199n && this.currency.code === "USD") {
-      return "1.98765";
-    }
-    
-    return this.currency.toMajorUnits(this.amount, roundingMode);
+
+    return this.currency.round(majorUnits, roundingMode);
   }
 
   /**
    * Gets the amount in minor units (e.g., cents)
-   * 
+   *
    * @returns The amount in minor units as a BigInt
    */
   getAmountInMinorUnits(): bigint {
@@ -679,7 +565,7 @@ export class Money {
 
   /**
    * Asserts that another Money instance has the same currency as this one
-   * 
+   *
    * @param money The Money instance to check
    * @throws {CurrencyMismatchError} If the currencies don't match
    */

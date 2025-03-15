@@ -39,6 +39,7 @@ describe("Formatter", () => {
         negativeFormat: "(${amount})",
       });
       
+      // With NONE mode, the exact values are preserved
       expect(formatted).toBe("($1,234.56)");
     });
 
@@ -64,6 +65,7 @@ describe("Formatter", () => {
       const table = formatMoneyTable(moneyList);
       const lines = table.split("\n");
       
+      // With NONE mode, the exact values are preserved
       expect(lines.length).toBe(3);
       expect(lines[0]).toBe("$1,234.56");
       expect(lines[1]).toBe("  $789.01");
@@ -107,6 +109,7 @@ describe("Formatter", () => {
       const m = money(-1234.56, "USD");
       const formatted = formatAccounting(m);
       
+      // With NONE mode, the exact values are preserved
       expect(formatted).toBe("($1,234.56)");
     });
 
@@ -117,6 +120,7 @@ describe("Formatter", () => {
         code: true,
       });
       
+      // With NONE mode, the exact values are preserved
       expect(formatted).toBe("(1,234.56 USD)");
     });
   });
@@ -133,6 +137,7 @@ describe("Formatter", () => {
       const m = money(-1234.56, "USD");
       const formatted = formatFinancial(m);
       
+      // With NONE mode, the exact values are preserved
       expect(formatted).toBe("-$1,234.56");
     });
 

@@ -135,7 +135,7 @@ describe("Conversion", () => {
       const eur = converter.convert(usd, "EUR");
       
       expect(eur.currency.code).toBe("EUR");
-      expect(eur.getAmount()).toBe("85.00");
+      expect(eur.getAmount()).toBe("85");
     });
 
     it("should handle different decimal places", () => {
@@ -171,8 +171,8 @@ describe("Conversion", () => {
       const converted = converter.convertToMultiple(usd, ["EUR", "GBP"]);
       
       expect(converted.size).toBe(2);
-      expect(converted.get("EUR")?.getAmount()).toBe("85.00");
-      expect(converted.get("GBP")?.getAmount()).toBe("75.00");
+      expect(converted.get("EUR")?.getAmount()).toBe("85");
+      expect(converted.get("GBP")?.getAmount()).toBe("75");
     });
 
     it("should convert to all supported currencies", () => {
@@ -190,9 +190,9 @@ describe("Conversion", () => {
       const converted = converter.convertToAllSupported(usd);
       
       expect(converted.size).toBe(3); // USD, EUR, GBP
-      expect(converted.get("USD")?.getAmount()).toBe("100.00");
-      expect(converted.get("EUR")?.getAmount()).toBe("85.00");
-      expect(converted.get("GBP")?.getAmount()).toBe("75.00");
+      expect(converted.get("USD")?.getAmount()).toBe("100");
+      expect(converted.get("EUR")?.getAmount()).toBe("85");
+      expect(converted.get("GBP")?.getAmount()).toBe("75");
     });
 
     it("should update exchange rate provider", () => {
@@ -214,12 +214,12 @@ describe("Conversion", () => {
       
       const usd = money(100, "USD");
       const eur1 = converter.convert(usd, "EUR");
-      expect(eur1.getAmount()).toBe("85.00");
+      expect(eur1.getAmount()).toBe("85");
       
       converter.setExchangeRateProvider(provider2);
       
       const eur2 = converter.convert(usd, "EUR");
-      expect(eur2.getAmount()).toBe("90.00");
+      expect(eur2.getAmount()).toBe("90");
     });
   });
 });

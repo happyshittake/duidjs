@@ -1,71 +1,73 @@
 /**
  * duidjs - A TypeScript library for handling money operations
- * 
+ *
  * This library provides a robust way to represent monetary values,
  * perform arithmetic operations, handle different currencies,
  * and format money for display.
  */
 
 // Export core classes
-export { Money } from './money';
-export { Currency } from './currency';
+export { Currency } from "./currency";
+export { Money } from "./money";
 
 // Export rounding functionality
-export { RoundingMode, RoundingConfig, round } from './rounding';
+export { round, RoundingConfig, RoundingMode } from "./rounding";
 
 // Export currency data
-export { ISO_CURRENCIES } from './currencies/iso';
-export type { CurrencyMetadata } from './currencies/iso';
-export { CurrencyCode } from './currencies/codes';
+export { CurrencyCode } from "./currencies/codes";
+export { ISO_CURRENCIES } from "./currencies/iso";
+export type { CurrencyMetadata } from "./currencies/iso";
 
 // Export formatting utilities
-export { formatMoney, formatMoneyTable, formatAccounting, formatFinancial } from './formatter';
-export type { ExtendedFormatOptions } from './formatter';
-export type { FormatOptions } from './currency';
+export type { FormatOptions } from "./currency";
+export {
+  formatAccounting,
+  formatFinancial,
+  formatMoney,
+  formatMoneyTable,
+} from "./formatter";
+export type { ExtendedFormatOptions } from "./formatter";
 
 // Export conversion utilities
-export { ExchangeRateProvider } from './conversion/exchange-rate';
-export { CurrencyConverter } from './conversion/converter';
-export type { ExchangeRateData } from './conversion/exchange-rate';
+export { CurrencyConverter } from "./conversion/converter";
+export { ExchangeRateProvider } from "./conversion/exchange-rate";
+export type { ExchangeRateData } from "./conversion/exchange-rate";
 
 // Export error types
 export {
-  DuidError,
+  AllocationError,
   CurrencyMismatchError,
+  DuidError,
+  InvalidAmountError,
   InvalidCurrencyError,
   InvalidOperationError,
-  InvalidAmountError,
-  AllocationError,
-} from './errors';
+} from "./errors";
 
 // Import types for helper functions
-import { Money } from './money';
-import { Currency } from './currency';
-import type { CurrencyMetadata } from './currencies/iso';
-import { CurrencyCode } from './currencies/codes';
-import { RoundingMode } from './rounding';
+import { CurrencyCode } from "./currencies/codes";
+import type { CurrencyMetadata } from "./currencies/iso";
+import { Currency } from "./currency";
+import { Money } from "./money";
 
 /**
  * Creates a Money instance from a floating-point amount
  *
  * @param amount The amount in major units (e.g., dollars) as a floating-point number
  * @param currency The currency code, CurrencyCode enum, or Currency instance
- * @param roundingMode The rounding mode to use (optional)
  * @returns A new Money instance
  */
 export function money(
   amount: number,
-  currency: string | CurrencyCode | Currency,
-  roundingMode?: RoundingMode
+  currency: string | CurrencyCode | Currency
 ): Money {
-  if (typeof currency === 'string') {
-    return Money.fromFloat(amount, currency, roundingMode);
+  if (typeof currency === "string") {
+    return Money.fromFloat(amount, currency);
   }
   if (currency instanceof Currency) {
-    return Money.fromFloat(amount, currency, roundingMode);
+    return Money.fromFloat(amount, currency);
   }
   // Handle CurrencyCode enum
-  return Money.fromFloat(amount, Currency.from(currency), roundingMode);
+  return Money.fromFloat(amount, Currency.from(currency));
 }
 
 /**
@@ -73,22 +75,20 @@ export function money(
  *
  * @param amount The amount in major units (e.g., dollars) as a string
  * @param currency The currency code, CurrencyCode enum, or Currency instance
- * @param roundingMode The rounding mode to use (optional)
  * @returns A new Money instance
  */
 export function moneyFromString(
   amount: string,
-  currency: string | CurrencyCode | Currency,
-  roundingMode?: RoundingMode
+  currency: string | CurrencyCode | Currency
 ): Money {
-  if (typeof currency === 'string') {
-    return Money.fromString(amount, currency, roundingMode);
+  if (typeof currency === "string") {
+    return Money.fromString(amount, currency);
   }
   if (currency instanceof Currency) {
-    return Money.fromString(amount, currency, roundingMode);
+    return Money.fromString(amount, currency);
   }
   // Handle CurrencyCode enum
-  return Money.fromString(amount, Currency.from(currency), roundingMode);
+  return Money.fromString(amount, Currency.from(currency));
 }
 
 /**
@@ -98,8 +98,11 @@ export function moneyFromString(
  * @param currency The currency code, CurrencyCode enum, or Currency instance
  * @returns A new Money instance
  */
-export function moneyFromMinorUnits(amount: number, currency: string | CurrencyCode | Currency): Money {
-  if (typeof currency === 'string') {
+export function moneyFromMinorUnits(
+  amount: number,
+  currency: string | CurrencyCode | Currency
+): Money {
+  if (typeof currency === "string") {
     return Money.fromInt(amount, currency);
   }
   if (currency instanceof Currency) {
@@ -116,15 +119,18 @@ export function moneyFromMinorUnits(amount: number, currency: string | CurrencyC
  * @param currency The currency code, CurrencyCode enum, or Currency instance
  * @returns A new Money instance
  */
-export function moneyFromBigInt(amount: bigint, currency: string | CurrencyCode | Currency): Money {
-  if (typeof currency === 'string') {
-    return Money.fromBigInt(amount, currency);
+export function moneyFromBigInt(
+  amount: bigint,
+  currency: string | CurrencyCode | Currency
+): Money {
+  if (typeof currency === "string") {
+    return Money.fromBigInt(amount * BigInt(10 ** 4), currency);
   }
   if (currency instanceof Currency) {
-    return Money.fromBigInt(amount, currency);
+    return Money.fromBigInt(amount * BigInt(10 ** 4), currency);
   }
   // Handle CurrencyCode enum
-  return Money.fromBigInt(amount, Currency.from(currency));
+  return Money.fromBigInt(amount * BigInt(10 ** 4), Currency.from(currency));
 }
 
 /**
@@ -134,7 +140,7 @@ export function moneyFromBigInt(amount: bigint, currency: string | CurrencyCode 
  * @returns A new Money instance with zero amount
  */
 export function zero(currency: string | CurrencyCode | Currency): Money {
-  if (typeof currency === 'string') {
+  if (typeof currency === "string") {
     return Money.zero(currency);
   }
   if (currency instanceof Currency) {

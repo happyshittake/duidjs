@@ -2,11 +2,12 @@
  * Currency class for the duidjs library
  */
 
-import { ISO_CURRENCIES } from "./currencies/iso";
-import type { CurrencyMetadata } from "./currencies/iso";
 import { CurrencyCode } from "./currencies/codes";
+import type { CurrencyMetadata } from "./currencies/iso";
+import { ISO_CURRENCIES } from "./currencies/iso";
 import { InvalidCurrencyError } from "./errors";
-import { RoundingMode, RoundingConfig, round as roundValue } from "./rounding";
+import { RoundingConfig, RoundingMode, round as roundValue } from "./rounding";
+import { bigintToNumber, decimalToBigInt } from "./utils";
 
 /**
  * Options for formatting currency values
@@ -88,31 +89,41 @@ export class Currency {
    */
   static fromMetadata(metadata: CurrencyMetadata): Currency {
     // Validate metadata
-    if (!metadata.code || typeof metadata.code !== 'string') {
-      throw new InvalidCurrencyError('Currency code is required and must be a string');
+    if (!metadata.code || typeof metadata.code !== "string") {
+      throw new InvalidCurrencyError(
+        "Currency code is required and must be a string"
+      );
     }
-    
-    if (!metadata.name || typeof metadata.name !== 'string') {
-      throw new InvalidCurrencyError('Currency name is required and must be a string');
+
+    if (!metadata.name || typeof metadata.name !== "string") {
+      throw new InvalidCurrencyError(
+        "Currency name is required and must be a string"
+      );
     }
-    
-    if (!metadata.symbol || typeof metadata.symbol !== 'string') {
-      throw new InvalidCurrencyError('Currency symbol is required and must be a string');
+
+    if (!metadata.symbol || typeof metadata.symbol !== "string") {
+      throw new InvalidCurrencyError(
+        "Currency symbol is required and must be a string"
+      );
     }
-    
-    if (typeof metadata.decimalPlaces !== 'number' ||
-        metadata.decimalPlaces < 0 ||
-        !Number.isInteger(metadata.decimalPlaces)) {
-      throw new InvalidCurrencyError('decimalPlaces must be a non-negative integer');
+
+    if (
+      typeof metadata.decimalPlaces !== "number" ||
+      metadata.decimalPlaces < 0 ||
+      !Number.isInteger(metadata.decimalPlaces)
+    ) {
+      throw new InvalidCurrencyError(
+        "decimalPlaces must be a non-negative integer"
+      );
     }
-    
+
     // Create a new instance bypassing the ISO validation
     const currency = Object.create(Currency.prototype);
     currency.code = metadata.code.toUpperCase();
     currency.name = metadata.name;
     currency.symbol = metadata.symbol;
     currency.decimalPlaces = metadata.decimalPlaces;
-    
+
     return currency;
   }
 
@@ -148,8 +159,7 @@ export class Currency {
     // Convert amount to number for formatting
     let numAmount: number;
     if (typeof amount === "bigint") {
-      // Convert BigInt to string first to avoid precision loss
-      numAmount = Number(amount) / 10 ** this.decimalPlaces;
+      numAmount = bigintToNumber(amount, decimalPlaces + 4);
     } else if (typeof amount === "string") {
       numAmount = parseFloat(amount);
     } else {
@@ -187,8 +197,8 @@ export class Currency {
    *
    * @returns The conversion factor as a BigInt
    */
-  getDecimalFactor(): bigint {
-    return BigInt(10) ** BigInt(this.decimalPlaces);
+  getDecimalFactor(addMorePrecision: bigint = 0n): bigint {
+    return BigInt(10) ** (BigInt(this.decimalPlaces) + addMorePrecision);
   }
 
   /**
@@ -212,62 +222,8 @@ export class Currency {
    * @param mode The rounding mode to use (defaults to global default)
    * @returns The amount in minor units as a BigInt
    */
-  toMinorUnits(
-    amount: number | string,
-    mode: RoundingMode = RoundingConfig.defaultRoundingMode
-  ): bigint {
-    const factor = this.getDecimalFactor();
-
-    // Special case for NONE mode - preserve all decimal places
-    if (mode === RoundingMode.NONE) {
-      if (typeof amount === "number") {
-        // Convert to string to preserve all decimal places
-        return this.toMinorUnits(amount.toString(), mode);
-      } else {
-        // For string amounts, parse without rounding
-        const [integerPart, fractionalPart = ""] = amount.split(".");
-        
-        // Convert to BigInt, preserving all decimal places
-        const intValue = BigInt(integerPart || "0");
-        
-        // Store the original string representation for later use
-        // This is a hack to preserve the exact value
-        const originalValue = `${integerPart}.${fractionalPart}`;
-        
-        // For NONE mode, we'll store the exact value in the amount
-        // We'll use the factor to scale the integer part
-        const minorUnits = intValue * factor;
-        
-        // Handle the fractional part
-        if (fractionalPart) {
-          // Use the exact fractional part, padded if needed
-          const paddedFractionalPart = fractionalPart.padEnd(this.decimalPlaces, "0");
-          return minorUnits + BigInt(paddedFractionalPart.slice(0, this.decimalPlaces));
-        }
-        
-        return minorUnits;
-      }
-    }
-
-    if (typeof amount === "number") {
-      // Handle potential floating point precision issues
-      const amountStr = amount.toFixed(this.decimalPlaces + 8);
-      return this.toMinorUnits(amountStr, mode);
-    } else {
-      // Round the string representation according to the specified mode
-      const roundedAmount = this.round(amount, mode);
-      
-      // Parse rounded amount
-      const [integerPart, fractionalPart = ""] = roundedAmount.split(".");
-      
-      // Pad fractional part to match decimal places
-      const paddedFractionalPart = fractionalPart
-        .padEnd(this.decimalPlaces, "0")
-        .slice(0, this.decimalPlaces);
-      
-      // Combine parts and convert to BigInt
-      return BigInt(integerPart + paddedFractionalPart);
-    }
+  toMinorUnits(amount: number | string): bigint {
+    return decimalToBigInt(amount, this.decimalPlaces + 4);
   }
 
   /**
@@ -277,36 +233,7 @@ export class Currency {
    * @param mode Optional rounding mode to use
    * @returns The amount in major units as a string
    */
-  toMajorUnits(amount: bigint, mode?: RoundingMode): string {
-    // Special case for NONE mode
-    if (mode === RoundingMode.NONE) {
-      // For NONE mode, we need to preserve the exact value
-      // We'll convert to a number and then to a string to get all decimal places
-      // We need to use a high-precision approach to avoid floating-point issues
-      const numValue = Number(amount) / (10 ** this.decimalPlaces);
-      
-      // Use a string representation to preserve all decimal places
-      return numValue.toString();
-    }
-
-    // For all other modes, use the standard approach
-    const factor = this.getDecimalFactor();
-
-    if (this.decimalPlaces === 0) {
-      return amount.toString();
-    }
-
-    const sign = amount < 0n ? "-" : "";
-    const absAmount = amount < 0n ? -amount : amount;
-
-    const integerPart = absAmount / factor;
-    const fractionalPart = absAmount % factor;
-
-    // Pad fractional part with leading zeros
-    const paddedFractionalPart = fractionalPart
-      .toString()
-      .padStart(this.decimalPlaces, "0");
-
-    return `${sign}${integerPart}.${paddedFractionalPart}`;
+  toMajorUnits(amount: bigint): string {
+    return bigintToNumber(amount, this.decimalPlaces + 4).toString();
   }
 }
